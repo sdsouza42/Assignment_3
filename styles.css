@@ -1,0 +1,13 @@
+body {
+    background-color: #f0f0f0;
+}
+
+.card {
+    background-color: #f8d030; /* Pikachu yellow */
+    color: #3d7dca; /* Pokédex blue */
+}
+
+.card:hover {
+    background-color: #3d7dca; /* Pokédex blue */
+    color: #f8d030; /* Pikachu yellow */
+}

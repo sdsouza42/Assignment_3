@@ -13,8 +13,18 @@ function displayPokemon(pokemonList) {
     const pokemonContainer = document.getElementById('pokemon-list');
 
     pokemonList.forEach(pokemon => {
-        const pokemonElement = document.createElement('p');
-        pokemonElement.textContent = pokemon.name;
+        const pokemonElement = document.createElement('div');
+        pokemonElement.classList.add('col-md-4', 'mb-4');
+
+        const card = `
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">${pokemon.name}</h5>
+                </div>
+            </div>
+        `;
+
+        pokemonElement.innerHTML = card;
         pokemonContainer.appendChild(pokemonElement);
     });
 }
