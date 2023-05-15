@@ -1,13 +1,24 @@
 body {
-    background-color: #f0f0f0;
+    background: url('pokemon-background.jpg') no-repeat center center fixed; 
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
 }
 
 .card {
-    background-color: #f8d030; /* Pikachu yellow */
-    color: #3d7dca; /* Pokédex blue */
+    background-color: rgba(255, 255, 255, 0.8);
 }
 
 .card:hover {
-    background-color: #3d7dca; /* Pokédex blue */
-    color: #f8d030; /* Pikachu yellow */
+    background-color: rgba(255, 255, 255, 1);
+}
+
+.pokemon-image {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 100px;  /* adjust as needed */
+    height: 100px;  /* adjust as needed */
+    object-fit: cover;  /* this will ensure that the image covers the entire space without distortion */
 }
