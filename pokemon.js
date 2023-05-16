@@ -1,23 +1,24 @@
 // URL for the Pokémon API
 const apiUrl = 'https://pokeapi.co/api/v2/pokemon?limit=6';
 
-// Variables to keep track of the current page and the total number of pages
+// Variables to keep track of the current page, the total number of pages, and the filtered Pokémon
 let currentPage = 1;
 let totalPages = 0;
+let filteredPokemon = [];
+let currentFilters = [];
 
 // Function to fetch Pokémon data from the API
 function fetchPokemon(page) {
-    if ((page - 1) * 5 < 810) {  // Only fetch if the current page times the limit per page is less than or equal to 810
-        axios.get(`${apiUrl}&offset=${(page - 1) * 5}`)
+    if ((page - 1) * 6 < 810) {  // Only fetch if the current page times the limit per page is less than or equal to 810
+        axios.get(`${apiUrl}&offset=${(page - 1) * 6}`)
             .then(response => {
-                totalPages = Math.ceil(810 / 5);  // Calculate total pages based on a maximum of 810 Pokémon
+                totalPages = Math.ceil(810 / 6);  // Calculate total pages based on a maximum of 810 Pokémon
                 displayPokemon(response.data.results);
                 displayPagination();
             })
             .catch(error => console.error(error));
     }
 }
-
 
 // Function to display Pokémon on the page
 function displayPokemon(pokemonList) {
@@ -76,18 +77,39 @@ function fetchPokemonDetails(pokemonId) {
 }
 
 // Function to display Pokémon details in the modal
+// Function to display Pokémon details in the modal
 function displayPokemonDetails(pokemon) {
     const modalTitle = document.getElementById('pokemonModalLabel');
     const modalBody = document.getElementById('pokemonModalBody');
 
-    modalTitle.textContent = pokemon.name;
+    modalTitle.innerHTML = `
+        <h2>${pokemon.name.toUpperCase()}</h2>
+        <h5>${pokemon.id}</h5>
+    `;
+
     modalBody.innerHTML = `
-        <img src="${pokemon.sprites.front_default}" alt="${pokemon.name}">
-        <p>Height: ${pokemon.height}</p>
-        <p>Weight: ${pokemon.weight}</p>
-        <p>Abilities: ${pokemon.abilities.map(ability => ability.ability.name).join(', ')}</p>
+        <div style="width:200px">
+            <img src="${pokemon.sprites.other['official-artwork'].front_default}" alt="${pokemon.name}"/>
+            <div>
+                <h3>Abilities</h3>
+                <ul>
+                    ${pokemon.abilities.map(ability => `<li>${ability.ability.name}</li>`).join('')}
+                </ul>
+            </div>
+            <div>
+                <h3>Stats</h3>
+                <ul>
+                    ${pokemon.stats.map(stat => `<li>${stat.stat.name}: ${stat.base_stat}</li>`).join('')}
+                </ul>
+            </div>
+        </div>
+        <h3>Types</h3>
+        <ul>
+            ${pokemon.types.map(type => `<li>${type.type.name}</li>`).join('')}
+        </ul>
     `;
 }
+
 
 // Function to display pagination
 function displayPagination() {
@@ -161,3 +183,86 @@ function displayPagination() {
 }
 
 fetchPokemon(currentPage);
+
+
+// Function to fetch Pokémon types from the API
+function fetchPokemonTypes() {
+    axios.get('https://pokeapi.co/api/v2/type/')
+        .then(response => {
+            displayPokemonTypes(response.data.results);
+        })
+        .catch(error => console.error(error));
+}
+
+fetchPokemonTypes();
+
+// Function to display Pokémon types as checkboxes
+function displayPokemonTypes(types) {
+    currentFilters = types;
+    const typesContainer = document.getElementById('pokemon-types');
+    typesContainer.innerHTML = ''; // Clear existing types
+
+    types.forEach((type, index) => {
+        const typeElement = document.createElement('div');
+        typeElement.classList.add('form-check');
+
+        const checkbox = `
+            <input class="form-check-input" type="checkbox" value="${index + 1}" id="${type.name}">
+            <label class="form-check-label" for="${type.name}">
+                ${type.name}
+            </label>
+        `;
+
+        typeElement.innerHTML = checkbox;
+        typesContainer.appendChild(typeElement);
+    });
+
+    // Add event listener to checkboxes
+    const checkboxes = document.querySelectorAll('.form-check-input');
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const selectedTypes = Array.from(checkboxes).filter(checkbox => checkbox.checked).map(checkbox => checkbox.id);
+        });
+    });
+
+// Add event listener to "Apply Filter" button
+const applyFilterButton = document.getElementById('apply-filter');
+applyFilterButton.addEventListener('click', function() {
+    currentPage = 1;  // Reset the current page
+    const selectedTypes = Array.from(checkboxes).filter(checkbox => checkbox.checked).map(checkbox => checkbox.value);
+    currentFilters = selectedTypes;
+    fetchPokemonByType(selectedTypes);
+});
+}
+
+// Function to fetch Pokémon by type
+function fetchPokemonByType(types) {
+    currentFilters = types;
+    const promises = types.map(type => axios.get(`https://pokeapi.co/api/v2/type/${type}/`));
+    Promise.all(promises)
+        .then(responses => {
+            // Get the Pokémon for each type
+            const pokemonByType = responses.map(response => response.data.pokemon.map(p => p.pokemon.name));
+
+            // Find the Pokémon that are common to all types
+            const commonPokemon = pokemonByType.reduce((a, b) => a.filter(c => b.includes(c)));
+
+            // Fetch the details for each common Pokémon
+            const detailPromises = commonPokemon.map(pokemon => axios.get(`https://pokeapi.co/api/v2/pokemon/${pokemon}/`));
+            Promise.all(detailPromises)
+                .then(responses => {
+                    filteredPokemon = responses.map(response => response.data);
+                    totalPages = Math.ceil(filteredPokemon.length / 6);
+                    displayPaginatedPokemon();
+                    displayPagination();
+                })
+                .catch(error => console.error(error));
+        })
+        .catch(error => console.error(error));
+}
+
+// Function to display paginated Pokémon
+function displayPaginatedPokemon() {
+    const paginatedPokemon = filteredPokemon.slice((currentPage - 1) * 6, currentPage * 6);
+    displayPokemon(paginatedPokemon);
+}
